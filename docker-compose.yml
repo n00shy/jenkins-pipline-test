@@ -1,0 +1,62 @@
+
+
+services:
+  # ─── MongoDB ────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7.0
+    container_name: dataflow-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: dataflow
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - dataflow-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend API ────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dataflow-backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/dataflow
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - dataflow-net
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/src:/app/src  # Hot reload in dev
+
+  # ─── Frontend ───────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dataflow-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - dataflow-net
+    ports:
+      - "3000:80"
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  dataflow-net:
+    driver: bridge
