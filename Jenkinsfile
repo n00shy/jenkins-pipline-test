@@ -36,14 +36,14 @@ pipeline {
                         passwordVariable: 'DOCKER_PASSWORD'
                     )
                 ]) {
-                    sh '''
-                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                    sh """
+                        echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
 
-                        docker push '"${FRONTEND_IMAGE}"':'"${IMAGE_TAG}"'
-                        docker push '"${BACKEND_IMAGE}"':'"${IMAGE_TAG}"'
+                        docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
+                        docker push ${BACKEND_IMAGE}:${IMAGE_TAG}
 
                         docker logout
-                    '''
+                    """
                 }
             }
         }
