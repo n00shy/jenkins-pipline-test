@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         FRONTEND_IMAGE = "abdullahahmed1101076/dataflow-frontend"
-        BACKEND_IMAGE  = "abdullahahmed1101076/dataflow-backend"
+        BACKEND_IMAGE = "abdullahahmed1101076/dataflow-backend"
+        IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
@@ -14,31 +15,19 @@ pipeline {
             }
         }
 
-        stage('Build Images') {
+        stage('Build Frontend') {
             steps {
                 sh """
-                    docker build -t ${FRONTEND_IMAGE}:latest ./frontend
-                    docker build -t ${BACKEND_IMAGE}:latest ./backend
+                docker build -t ${FRONTEND_IMAGE}:${IMAGE_TAG} ./frontend
                 """
             }
         }
 
-        stage('Push Images') {
+        stage('Build Backend') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh """
-                        echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-
-                        docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
-                        docker push ${BACKEND_IMAGE}:${IMAGE_TAG}
-
-                        docker logout
-                    """
-                }
+                sh """
+                docker build -t ${BACKEND_IMAGE}:${IMAGE_TAG} ./backend
+                """
             }
         }
     }
