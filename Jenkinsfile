@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        FRONTEND_IMAGE = "abdullahahmed1101076/dataflow-frontend"
-        BACKEND_IMAGE  = "abdullahahmed1101076/dataflow-backend"
+        FRONTEND_IMAGE = "abdullahahmed1101076/dataflow-frontend:latest"
+        BACKEND_IMAGE  = "abdullahahmed1101076/dataflow-backend:latest"
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
