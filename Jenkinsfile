@@ -54,13 +54,16 @@ pipeline {
                     file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')
                 ]) {
                     sh """
-                        sed -i 's|IMAGE_TAG|${IMAGE_TAG}|g' k8s/backend.yml
-                        sed -i 's|IMAGE_TAG|${IMAGE_TAG}|g' k8s/frontend.yml
+                        kubectl set image deployment/backend \
+                            backend=${BACKEND_IMAGE}:${IMAGE_TAG} \
+                            
 
-                        kubectl apply -f k8s/
+                        kubectl set image deployment/frontend \
+                            frontend=${FRONTEND_IMAGE}:${IMAGE_TAG} \
+                            
 
-                        kubectl rollout status deployment/backend -n dataflow
-                        kubectl rollout status deployment/frontend -n dataflow
+                        kubectl rollout status deployment/backend 
+                        kubectl rollout status deployment/frontend
                     """
                 }
             }
