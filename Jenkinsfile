@@ -47,5 +47,37 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                withCredentials([
+                    file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')
+                ]) {
+                    sh """
+                        sed -i 's|IMAGE_TAG|${IMAGE_TAG}|g' k8s/backend.yml
+                        sed -i 's|IMAGE_TAG|${IMAGE_TAG}|g' k8s/frontend.yml
+
+                        kubectl apply -f k8s/
+
+                        kubectl rollout status deployment/backend -n dataflow
+                        kubectl rollout status deployment/frontend -n dataflow
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully."
+        }
+
+        failure {
+            echo "Pipeline failed."
+        }
+
+        always {
+            cleanWs()
+        }
     }
 }
