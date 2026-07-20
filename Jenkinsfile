@@ -1,12 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        FRONTEND_IMAGE = "abdullahahmed1101076/dataflow-frontend"
-        BACKEND_IMAGE  = "abdullahahmed1101076/dataflow-backend"
-        IMAGE_TAG      = "${BUILD_NUMBER}"
-    }
-
     stages {
 
         stage('Checkout') {
@@ -15,72 +9,47 @@ pipeline {
             }
         }
 
-        stage('Build Frontend') {
+        stage('Build Images') {
             steps {
-                sh "docker build -t ${FRONTEND_IMAGE}:${IMAGE_TAG} ./frontend"
+                sh 'docker compose build'
             }
         }
 
-        stage('Build Backend') {
+        stage('Docker Login') {
             steps {
-                sh "docker build -t ${BACKEND_IMAGE}:${IMAGE_TAG} ./backend"
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                }
             }
         }
 
         stage('Push Images') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub',
-                        usernameVariable: 'DOCKER_USERNAME',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    )
-                ]) {
-                    sh """
-                        echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
-
-                        docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
-                        docker push ${BACKEND_IMAGE}:${IMAGE_TAG}
-
-                        docker logout
-                    """
-                }
+                sh 'docker compose push'
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Start Containers') {
             steps {
-                withCredentials([
-                    file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')
-                ]) {
-                    sh """
-                        kubectl set image deployment/backend \
-                            backend=${BACKEND_IMAGE}:${IMAGE_TAG} \
-                            
+                sh 'docker compose up -d'
+            }
+        }
 
-                        kubectl set image deployment/frontend \
-                            frontend=${FRONTEND_IMAGE}:${IMAGE_TAG} \
-                            
-
-                        kubectl rollout status deployment/backend 
-                        kubectl rollout status deployment/frontend
-                    """
-                }
+        stage('Verify') {
+            steps {
+                sh 'docker compose ps'
+                sh 'docker ps'
             }
         }
     }
 
     post {
-        success {
-            echo "Pipeline completed successfully."
-        }
-
-        failure {
-            echo "Pipeline failed."
-        }
-
         always {
-            cleanWs()
+            sh 'docker image ls'
         }
     }
 }
