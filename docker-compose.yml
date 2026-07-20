@@ -23,7 +23,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: dataflow-backend
+    container_name: dataflow-backend:latest
     restart: unless-stopped
     env_file: ./backend/.env
     environment:
@@ -44,7 +44,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: dataflow-frontend
+    container_name: dataflow-frontend:latest
     restart: unless-stopped
     depends_on:
       - backend
