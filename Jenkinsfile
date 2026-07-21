@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_USER = "abdullahahmed1101076"
+        IMAGE_TAG   = "${BUILD_NUMBER}"
+    }
+
     stages {
 
         stage('Checkout') {
@@ -11,7 +16,15 @@ pipeline {
 
         stage('Build Images') {
             steps {
-                sh 'docker compose build'
+                sh '''
+                docker compose build
+
+                docker tag ${DOCKER_USER}/dataflow-backend:latest \
+                           ${DOCKER_USER}/dataflow-backend:${IMAGE_TAG}
+
+                docker tag ${DOCKER_USER}/dataflow-frontend:latest \
+                           ${DOCKER_USER}/dataflow-frontend:${IMAGE_TAG}
+                '''
             }
         }
 
@@ -29,7 +42,13 @@ pipeline {
 
         stage('Push Images') {
             steps {
-                sh 'docker compose push'
+                sh '''
+                docker push ${DOCKER_USER}/dataflow-backend:latest
+                docker push ${DOCKER_USER}/dataflow-backend:${IMAGE_TAG}
+
+                docker push ${DOCKER_USER}/dataflow-frontend:latest
+                docker push ${DOCKER_USER}/dataflow-frontend:${IMAGE_TAG}
+                '''
             }
         }
 
@@ -41,8 +60,11 @@ pipeline {
 
         stage('Verify') {
             steps {
-                sh 'docker compose ps'
-                sh 'docker ps'
+                sh '''
+                docker compose ps
+                docker ps
+                docker image ls
+                '''
             }
         }
     }
@@ -50,6 +72,14 @@ pipeline {
     post {
         always {
             sh 'docker image ls'
+        }
+
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
